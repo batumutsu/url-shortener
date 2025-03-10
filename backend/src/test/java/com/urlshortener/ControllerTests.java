@@ -125,7 +125,7 @@ public class ControllerTests {
   @Test
   void testLogout_Success() throws Exception {
     mockMvcAuth.perform(post("/auth/logout").header("Authorization", "Bearer token"))
-        .andExpect(status().isOk());
+        .andExpect(status().isNoContent());
   }
 
   @Test
