@@ -2,7 +2,8 @@
 
 A modern URL shortening service with analytics, built with Next.js 15 and Spring Boot.
 
-![URL Shortener](https://www.svgrepo.com/svg/461845/link-alt?height=400&width=800)
+[![Java Version](https://img.shields.io/badge/Java-21%2B-blue.svg)](https://www.oracle.com/java/technologies/javase-jdk21-downloads.html) [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot) [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 
 ## Features
 
@@ -54,7 +55,7 @@ url-shortener/
 ### Prerequisites
 
 - Node.js 20+ and npm
-- Java 17+
+- Java 21+
 - Maven
 - PostgreSQL
 - Docker and Docker Compose
