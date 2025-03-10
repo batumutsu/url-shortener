@@ -12,6 +12,7 @@ A modern URL shortening service with analytics, built with Next.js 15 and Spring
 - 📱 Responsive design with dark mode support
 - 🔒 Secure JWT-based authentication
 - 🐳 Docker support for easy deployment
+- 👷 CI pipeline
 
 ## Tech Stack
 
@@ -85,6 +86,8 @@ docker-compose up -d
 ```
 
 The backend will be available at [http://localhost:8080](http://localhost:8080)
+
+The backend api documentation available at [http://localhost:8080/api/v1/swagger-ui/index.html](http://localhost:8080/api/v1/swagger-ui/index.html)
 
 The frontend will be available at [http://localhost:3000](http://localhost:3000)
 
