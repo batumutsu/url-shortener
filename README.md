@@ -382,4 +382,4 @@ The project includes Docker configuration for both frontend and backend:
 
 ## License
 
-This project is licensed under the Apache License - see the LICENSE file for details.
+This project is licensed under the Apache-2.0 license - see the LICENSE file for details.
