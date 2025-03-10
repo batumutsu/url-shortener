@@ -1,8 +1,22 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, LinkIcon } from "lucide-react"
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, LinkIcon } from "lucide-react";
 
 export default function Home() {
+  // Add this useEffect to prevent logout on home page navigation
+  useEffect(() => {
+    // This is just to ensure we don't interfere with the auth state
+    const checkAuth = () => {
+      const auth = localStorage.getItem("auth");
+      return !!auth;
+    };
+
+    checkAuth();
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
@@ -15,8 +29,8 @@ export default function Home() {
                     Shorten Your URLs
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Create short, memorable links that redirect to your long URLs. Track clicks and analyze your link
-                    performance.
+                    Create short, memorable links that redirect to your long
+                    URLs. Track clicks and analyze your link performance.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -47,9 +61,12 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Features</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                  Features
+                </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our URL shortener provides everything you need to manage and track your links.
+                  Our URL shortener provides everything you need to manage and
+                  track your links.
                 </p>
               </div>
             </div>
@@ -104,7 +121,9 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold">Secure</h3>
-                <p className="text-center text-muted-foreground">Your links are protected with JWT authentication.</p>
+                <p className="text-center text-muted-foreground">
+                  Your links are protected with JWT authentication.
+                </p>
               </div>
             </div>
           </div>
@@ -120,6 +139,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
-

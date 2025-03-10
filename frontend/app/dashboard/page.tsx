@@ -1,36 +1,43 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { UrlList } from "@/components/url-list"
-import { CreateUrlForm } from "@/components/create-url-form"
-import { checkAuth } from "@/lib/auth"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlList } from "@/components/url-list";
+import { CreateUrlForm } from "@/components/create-url-form";
+import { checkAuth } from "@/lib/auth";
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      const isAuthenticated = await checkAuth()
+      const isAuthenticated = await checkAuth();
       if (!isAuthenticated) {
-        router.push("/login")
+        router.push("/login");
       } else {
-        setIsLoading(false)
+        setIsLoading(false);
       }
+    };
+
+    // Prevent the dashboard from redirecting if auth data exists
+    const authData = localStorage.getItem("auth");
+    if (!authData) {
+      router.push("/login");
+      return;
     }
 
-    checkAuthentication()
-  }, [router])
+    checkAuthentication();
+  }, [router]);
 
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">Loading...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -64,6 +71,5 @@ export default function DashboardPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-
