@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8080/api/v1
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    restart: unless-stopped
+    networks:
+      - url-shortener-network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SPRING_TEST_PORT: ${SPRING_TEST_PORT}
+        APP_CONTEXT_PATH: ${APP_CONTEXT_PATH}
+        LOCAL_HOST: ${LOCAL_HOST}
+        KEY_ALPHABETS: ${KEY_ALPHABETS}
+        KEY_LENGTH: ${KEY_LENGTH}
+        JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+        JWT_EXPIRATION_TIME: ${JWT_EXPIRATION_TIME}
+    restart: always
+    ports:
+      - ${SPRING_PORT}:${SPRING_PORT}
+    environment:
+      - SPRING_TEST_PORT=${SPRING_TEST_PORT}
+      - APP_CONTEXT_PATH=${APP_CONTEXT_PATH}
+      - LOCAL_HOST=${LOCAL_HOST}
+      - SPRING_PORT=${SPRING_PORT}
+      - KEY_ALPHABETS=${KEY_ALPHABETS}
+      - KEY_LENGTH=${KEY_LENGTH}
+      - LOCAL_POSTGRES_BASE_URL=jdbc:postgresql://db:${DEV_POSTGRES_PORT}
+      - URL_SHORTENER_DB=${URL_SHORTENER_DB}
+      - DEV_POSTGRES_USER=${DEV_POSTGRES_USER}
+      - DEV_POSTGRES_PASSWORD=${DEV_POSTGRES_PASSWORD}
+      - DEV_POSTGRES_PORT=${DEV_POSTGRES_PORT}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_EXPIRATION_TIME=${JWT_EXPIRATION_TIME}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+    networks:
+      - url-shortener-network
+
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - ${DEV_POSTGRES_PORT}:${DEV_POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${URL_SHORTENER_DB}
+      POSTGRES_USER: ${DEV_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DEV_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - url-shortener-network
+
+  redis:
+    image: redis:6.2
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: redis-server
+    volumes:
+      - redis_data:/data
+    networks:
+      - url-shortener-network
+
+networks:
+  url-shortener-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
