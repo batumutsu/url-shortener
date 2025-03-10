@@ -86,6 +86,8 @@ docker-compose up -d
 
 The backend will be available at [http://localhost:8080](http://localhost:8080)
 
+The backend api documentation available at [http://localhost:8080/api/v1/swagger-ui/index.html](http://localhost:8080/api/v1/swagger-ui/index.html)
+
 The frontend will be available at [http://localhost:3000](http://localhost:3000)
 
 2. Access the application at [http://localhost:3000](http://localhost:3000)

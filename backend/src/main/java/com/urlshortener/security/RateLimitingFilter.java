@@ -1,9 +1,11 @@
 package com.urlshortener.security;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
@@ -13,6 +15,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import redis.clients.jedis.Jedis;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
@@ -26,15 +30,33 @@ public class RateLimitingFilter extends OncePerRequestFilter {
   @Value("${spring.redis.port}")
   private int REDIS_PORT;
 
-  // Time windows in seconds
   @Value("${rate.limit.authenticated.window}")
   private int AUTHENTICATED_WINDOW;
 
   @Value("${rate.limit.unauthenticated.window}")
   private int UNAUTHENTICATED_WINDOW;
 
+  // Paths that should be excluded from rate limiting
+  private static final List<String> EXCLUDED_PATHS = Arrays.asList(
+      "/swagger-ui/**",
+      "/v3/api-docs/**",
+      "/swagger-resources/**",
+      "/webjars/**"
+  );
+
+  private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
   @Override
-  protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
+  protected boolean shouldNotFilter(HttpServletRequest request) {
+    String path = request.getRequestURI();
+    return EXCLUDED_PATHS.stream()
+        .anyMatch(pattern -> pathMatcher.match(pattern, path));
+  }
+
+  @Override
+  protected void doFilterInternal(@NonNull HttpServletRequest request,
+      @NonNull HttpServletResponse response,
+      @NonNull FilterChain filterChain)
       throws ServletException, IOException {
 
     String clientIp = request.getRemoteAddr();
@@ -50,12 +72,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     int timeWindow;
 
     if (isAuthenticated) {
-      // For authenticated users: rate limit per user per endpoint
       String username = authentication.getName();
       key = "rate_limit:auth:" + username + ":" + requestPath;
       timeWindow = AUTHENTICATED_WINDOW;
     } else {
-      // For unauthenticated users: rate limit per IP address for all endpoints
       key = "rate_limit:unauth:" + clientIp;
       timeWindow = UNAUTHENTICATED_WINDOW;
     }
@@ -64,24 +84,21 @@ public class RateLimitingFilter extends OncePerRequestFilter {
       String requestCount = jedis.get(key);
 
       if (requestCount == null) {
-        // First request, set count to 1 and set expiration based on authentication status
         jedis.setex(key, timeWindow, "1");
       } else {
         int currentCount = Integer.parseInt(requestCount);
 
-        if (isAuthenticated &&currentCount < MAX_REQUESTS) {
-          // Increment the request count
-          jedis.incr(key);
-        } else {
-          // Limit exceeded, send 429 Too Many Requests response
-          response.setStatus(429);
+        if (currentCount >= MAX_REQUESTS) {
+          response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
           response.getWriter().write("Rate limit exceeded. Try again later.");
           return;
         }
+
+        jedis.incr(key);
       }
     }
 
-    filterChain.doFilter(request, response); // Continue the request
+    filterChain.doFilter(request, response);
   }
 }
 
