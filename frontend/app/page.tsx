@@ -4,13 +4,16 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LinkIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   // Add this useEffect to prevent logout on home page navigation
   useEffect(() => {
     // This is just to ensure we don't interfere with the auth state
     const checkAuth = () => {
       const auth = localStorage.getItem("auth");
+      !!auth && router.push("/dashboard");
       return !!auth;
     };
 

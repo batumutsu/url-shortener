@@ -5,12 +5,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
-import { logoutUser } from "@/lib/auth";
+import { getUsername, logoutUser } from "@/lib/auth";
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     // Prevent navigation from causing unintended logouts
@@ -33,6 +34,7 @@ export function Navbar() {
     const checkAuth = () => {
       const auth = localStorage.getItem("auth");
       setIsLoggedIn(!!auth);
+      setUsername(!!auth ? getUsername() : null);
     };
 
     // Check auth on initial load
@@ -85,7 +87,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href="/dashboard" className="flex items-center space-x-2">
             <span className="font-bold text-xl">URL Shortener</span>
           </Link>
         </div>
@@ -93,6 +95,11 @@ export function Navbar() {
           <nav className="flex items-center space-x-2">
             {isLoggedIn ? (
               <>
+                {username && (
+                  <span className="text-sm text-muted-foreground mr-2">
+                    Hello, {username}
+                  </span>
+                )}
                 <Link href="/dashboard">
                   <Button variant="ghost">Dashboard</Button>
                 </Link>
