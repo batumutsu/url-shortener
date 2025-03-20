@@ -8,7 +8,7 @@ import com.urlshortener.exception.ResourceNotFoundException;
 import com.urlshortener.exception.UnauthorizedException;
 import com.urlshortener.repository.UserRepository;
 import com.urlshortener.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -120,7 +120,8 @@ public class AuthService {
         .build();
   }
 
-  public void logout(String token) {
+  public Void logout(String token) {
     tokenBlacklist.add(token);
+    return null;
   }
 }

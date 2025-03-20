@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
-import { getUsername, logoutUser } from "@/lib/auth";
+import { logoutUser } from "@/lib/auth";
+import { isAuthenticated, getAuthToken, getUsername } from "@/lib/cookies";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -14,27 +15,10 @@ export function Navbar() {
   const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    // Prevent navigation from causing unintended logouts
-    const handleBeforeUnload = () => {
-      // This is just to ensure the auth state persists during navigation
-      const auth = localStorage.getItem("auth");
-      if (auth) {
-        sessionStorage.setItem("preserveAuth", "true");
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, []);
-
-  useEffect(() => {
     const checkAuth = () => {
-      const auth = localStorage.getItem("auth");
-      setIsLoggedIn(!!auth);
-      setUsername(!!auth ? getUsername() : null);
+      const authenticated = isAuthenticated();
+      setIsLoggedIn(authenticated);
+      setUsername(authenticated ? getUsername() : null);
     };
 
     // Check auth on initial load
@@ -42,7 +26,7 @@ export function Navbar() {
 
     // Create a custom event for auth changes
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "auth") {
+      if (e.key === "auth_token" || e.key === "refresh_token") {
         checkAuth();
       }
     };
@@ -62,18 +46,13 @@ export function Navbar() {
 
   const handleLogout = async () => {
     try {
-      const auth = localStorage.getItem("auth");
-      if (auth) {
-        const { accessToken } = JSON.parse(auth);
-        await logoutUser(accessToken);
+      const token = getAuthToken();
+      if (token) {
+        await logoutUser(token);
       }
-      localStorage.removeItem("auth");
-      window.dispatchEvent(new Event("authChange"));
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      localStorage.removeItem("auth");
-      window.dispatchEvent(new Event("authChange"));
       router.push("/");
     }
   };

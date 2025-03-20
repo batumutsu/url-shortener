@@ -61,13 +61,9 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const response = await registerUser(values);
-      if (response.accessToken) {
-        localStorage.setItem("auth", JSON.stringify(response));
-        // Explicitly dispatch the event after setting localStorage
-        window.dispatchEvent(new Event("authChange"));
-        router.push("/dashboard");
-      }
+      await registerUser(values);
+      // No need to manually set cookies, the registerUser function does that
+      router.push("/dashboard");
     } catch (err) {
       setError(
         err instanceof Error

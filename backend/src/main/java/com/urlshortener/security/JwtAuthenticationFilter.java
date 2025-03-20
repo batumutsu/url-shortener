@@ -43,13 +43,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     log.debug("JwtAuthenticationFilter called for URI: {}", request.getRequestURI());
     try {
       final String jwt;
-      final String userEmail;
+      final String userName;
 
-      jwt = getJwtFromRequest(request);
-      userEmail = jwt != null ? jwtTokenProvider.getUsername(jwt) : null;
+      jwt = jwtTokenProvider.getJwtFromRequest(request);
+      userName = jwt != null ? jwtTokenProvider.getUsername(jwt) : null;
 
-      if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+      if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
 
         if (jwtTokenProvider.validateToken(jwt, userDetails)) {
           UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -79,13 +79,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
     filterChain.doFilter(request, response);
-  }
-
-  private String getJwtFromRequest(HttpServletRequest request) {
-    String bearerToken = request.getHeader("Authorization");
-    if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-      return bearerToken.substring(7);
-    }
-    return null;
   }
 }

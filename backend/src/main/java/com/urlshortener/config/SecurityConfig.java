@@ -1,6 +1,8 @@
 package com.urlshortener.config;
 
 import com.urlshortener.security.JwtAuthenticationFilter;
+import com.urlshortener.security.RateLimitingFilter;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,10 +33,12 @@ import java.util.List;
 public class SecurityConfig {
   private final UserDetailsService userDetailsService;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final RateLimitingFilter rateLimitingFilter;
 
-  public SecurityConfig(UserDetailsService userDetailsService, JwtAuthenticationFilter jwtAuthenticationFilter) {
+  public SecurityConfig(UserDetailsService userDetailsService, JwtAuthenticationFilter jwtAuthenticationFilter, RateLimitingFilter rateLimitingFilter) {
     this.userDetailsService = userDetailsService;
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    this.rateLimitingFilter = rateLimitingFilter;
   }
 
   @Bean
@@ -55,7 +59,8 @@ public class SecurityConfig {
           auth.anyRequest().authenticated();
         })
         .authenticationProvider(authenticationProvider())
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(rateLimitingFilter, JwtAuthenticationFilter.class);
 
     return http.build();
   }
