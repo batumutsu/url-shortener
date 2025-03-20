@@ -1,5 +1,11 @@
 import type { AuthRequest, AuthResponse, RegistrationRequest } from "./types";
 import { API_URL } from "./config";
+import {
+  setAuthCookies,
+  removeAuthCookies,
+  getAuthToken,
+  getRefreshToken,
+} from "./cookies";
 
 export async function registerUser(
   data: RegistrationRequest
@@ -20,6 +26,9 @@ export async function registerUser(
   }
 
   const authResponse = await response.json();
+
+  // Set cookies instead of localStorage
+  setAuthCookies(authResponse);
 
   // Dispatch custom event to notify about auth change
   if (typeof window !== "undefined") {
@@ -47,6 +56,9 @@ export async function loginUser(data: AuthRequest): Promise<AuthResponse> {
 
   const authResponse = await response.json();
 
+  // Set cookies instead of localStorage
+  setAuthCookies(authResponse);
+
   // Dispatch custom event to notify about auth change
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("authChange"));
@@ -64,15 +76,19 @@ export async function refreshToken(token: string): Promise<AuthResponse> {
   );
 
   if (!response.ok) {
-    // If refresh fails, clear the auth data
+    // If refresh fails, clear the auth cookies
+    removeAuthCookies();
+
     if (typeof window !== "undefined") {
-      localStorage.removeItem("auth");
       window.dispatchEvent(new Event("authChange"));
     }
     throw new Error("Failed to refresh token");
   }
 
   const authResponse = await response.json();
+
+  // Set cookies with new tokens
+  setAuthCookies(authResponse);
 
   // Dispatch custom event to notify about auth change
   if (typeof window !== "undefined") {
@@ -83,15 +99,26 @@ export async function refreshToken(token: string): Promise<AuthResponse> {
 }
 
 export async function logoutUser(token: string): Promise<void> {
-  const response = await fetch(`${API_URL}/auth/logout`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await fetch(`${API_URL}/auth/logout`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  if (!response.ok) {
-    throw new Error("Failed to logout");
+    if (!response.ok) {
+      console.error("Logout API call failed");
+    }
+  } catch (error) {
+    console.error("Error during logout:", error);
+  } finally {
+    // Always remove cookies regardless of API response
+    removeAuthCookies();
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("authChange"));
+    }
   }
 }
 
@@ -99,12 +126,9 @@ export async function checkAuth(): Promise<boolean> {
   try {
     if (typeof window === "undefined") return false;
 
-    const authData = localStorage.getItem("auth");
-    if (!authData) return false;
-
-    const { accessToken, refreshToken: refreshTokenValue } = JSON.parse(
-      authData
-    ) as AuthResponse;
+    // Check if auth token exists in cookies
+    const accessToken = getAuthToken();
+    if (!accessToken) return false;
 
     // Try to use the current token
     try {
@@ -116,17 +140,55 @@ export async function checkAuth(): Promise<boolean> {
 
       if (response.ok) return true;
 
+      // Handle rate limiting
+      if (response.status === 429) {
+        // If rate limited, log the user out
+        await logoutUser(accessToken);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("authChange"));
+        }
+        return false;
+      }
+
       // If token is expired, try to refresh
       if (response.status === 401) {
+        const refreshTokenValue = getRefreshToken();
+        if (!refreshTokenValue) return false;
+
         try {
-          const newAuthData = await refreshToken(refreshTokenValue);
-          localStorage.setItem("auth", JSON.stringify(newAuthData));
-          window.dispatchEvent(new Event("authChange"));
+          const refreshResponse = await fetch(
+            `${API_URL}/auth/refresh?refreshToken=${refreshTokenValue}`,
+            {
+              method: "POST",
+            }
+          );
+
+          // Also check for rate limiting in refresh token request
+          if (refreshResponse.status === 429) {
+            removeAuthCookies();
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("authChange"));
+            }
+            return false;
+          }
+
+          if (!refreshResponse.ok) {
+            removeAuthCookies();
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("authChange"));
+            }
+            return false;
+          }
+
+          const newAuthData = await refreshResponse.json();
+          setAuthCookies(newAuthData);
           return true;
         } catch (refreshError) {
-          // If refresh fails, clear auth data
-          localStorage.removeItem("auth");
-          window.dispatchEvent(new Event("authChange"));
+          // If refresh fails, clear auth cookies
+          removeAuthCookies();
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("authChange"));
+          }
           return false;
         }
       }
@@ -140,26 +202,5 @@ export async function checkAuth(): Promise<boolean> {
   }
 }
 
-export function getAuthToken(): string | null {
-  try {
-    const authData = localStorage.getItem("auth");
-    if (!authData) return null;
-
-    const { accessToken } = JSON.parse(authData) as AuthResponse;
-    return accessToken;
-  } catch (error) {
-    return null;
-  }
-}
-
-export function getUsername(): string | null {
-  try {
-    const authData = localStorage.getItem("auth");
-    if (!authData) return null;
-
-    const { username } = JSON.parse(authData) as AuthResponse;
-    return username;
-  } catch (error) {
-    return null;
-  }
-}
+// Replace getAuthToken with the one from cookie.ts
+export { getAuthToken, isAuthenticated } from "./cookies";

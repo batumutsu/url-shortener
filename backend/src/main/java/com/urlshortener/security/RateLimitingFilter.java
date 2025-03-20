@@ -92,6 +92,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
       int currentCount = Integer.parseInt(requestCount);
 
       if (currentCount >= MAX_REQUESTS) {
+        String jwt = jwtTokenProvider.getJwtFromRequest(request);
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.getWriter().write("Rate limit exceeded. Try again later.");
         return;

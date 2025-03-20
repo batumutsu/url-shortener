@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlList } from "@/components/url-list";
 import { CreateUrlForm } from "@/components/create-url-form";
-import { checkAuth } from "@/lib/auth";
+import { checkAuth, isAuthenticated } from "@/lib/auth";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -14,20 +14,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkAuthentication = async () => {
-      const isAuthenticated = await checkAuth();
-      if (!isAuthenticated) {
+      // First do a quick check with cookies
+      if (!isAuthenticated()) {
+        router.push("/login");
+        return;
+      }
+
+      // Then do a full check with API validation
+      const isAuthValid = await checkAuth();
+      if (!isAuthValid) {
         router.push("/login");
       } else {
         setIsLoading(false);
       }
     };
-
-    // Prevent the dashboard from redirecting if auth data exists
-    const authData = localStorage.getItem("auth");
-    if (!authData) {
-      router.push("/login");
-      return;
-    }
 
     checkAuthentication();
   }, [router]);
